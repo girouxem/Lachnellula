@@ -51,9 +51,9 @@ Predicted complete CDS 	8,702	8,367	8,530	7,983	7,834	8,458	6,973
  
 Literature Cited
 
-	Agency, C. F. I. (2018). List of Pests Regulated by Canada, vol. 2018.
-	Altschul, S. F., Gish, W., Miller, W., Myers, E. W. and Lipman, D. J. (1990). Basic local alignment search tool. Journal of molecular biology 215, 403-410.
-	Bao, W., Kojima, K. K. and Kohany, O. (2015). Repbase Update, a database of repetitive elements in eukaryotic genomes. Mobile DNA 6, 11.
+	Agency, C. F. I. (2018). List of Pests Regulated by Canada, vol. 2018.     
+	Altschul, S. F., Gish, W., Miller, W., Myers, E. W. and Lipman, D. J. (1990). Basic local alignment search tool. Journal of molecular biology 215, 403-410.    
+	Bao, W., Kojima, K. K. and Kohany, O. (2015). Repbase Update, a database of repetitive elements in eukaryotic genomes. Mobile DNA 6, 11.     
 	Baral, H. (1984). Taxonomische und ökologische Studien über die Koniferen bewohnenden europäischen Arten der Gattung Lachnellula Karsten. Beiträge zur Kenntnis der Pilze Mitteleuropas 1, 143-156.
 	Brandt, J. P. (1997). Forest health monitoring in west-central Canada in 1996.
 	Campbell, M. S., Holt, C., Moore, B. and Yandell, M. (2014a). Genome annotation and curation using MAKER and MAKER‐P. Current Protocols in Bioinformatics 48, 4.11. 1-4.11. 39.
