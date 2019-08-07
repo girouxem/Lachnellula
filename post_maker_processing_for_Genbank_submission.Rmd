@@ -1,0 +1,790 @@
+---
+title: "Post-Maker processing for GenBank whole genome submissions"
+author: "Emily Giroux"
+date: "12/6/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Getting started in R:** 
+Set the working directory > setwd("~/") Check version installed
+```{r global_options, include=FALSE}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60), tidy = TRUE, fig.align='center')
+```
+
+**This will help us when finding our files to source functions:**
+```{r sourcing_my_functions}
+install.packages("rprojroot")
+library(rprojroot)
+# We specify ours is an RStudio project
+# The root object contains a function that will help us locate our package r files regardless of our current working directory
+root <- rprojroot::is_rstudio_project
+scriptsPath <- root$make_fix_file(".")("R")
+scripts  <- dir(root$find_file("R", path = root$find_file()))
+scriptsl <- paste(scriptsPath, scripts, sep = "//")
+lapply(scriptsl, source)
+```
+
+**Packages to install and have ready for later analyses:**
+```{r}
+install.packages("data.table")
+```
+
+**User: Define the path to the shared folder where the main working directory will be.**
+```{r setting_the_main_directory, cache=TRUE}
+sharedPath <- "/isilon/cfia-ottawa-fallowfield/users/girouxeml/PIRL_working_directory/"
+```
+
+**Define where the analysis path is, or the path to the current project:**
+```{r setting_the_main_directory, cache=TRUE}
+analysis   <- "Lachnellula_species_GenomeAn_IonTorrent_2017/"
+sharedPathAn <- paste(sharedPath, analysis, sep="")
+```
+
+**Define path variables to programs and scripts used:**
+```{r}
+# Biocluster system-wide programs:
+augustBioCPath  <- "/isilon/biodiversity/pipelines/maker-2.10/augustus.2.7/bin/augustus"
+augEvalBioCPath <- "/isilon/biodiversity/pipelines/maker-2.10/augustus.2.7/bin/augustus"
+bedtoolsPath    <- "/opt/bio/BEDTools/bin/bedtools"
+blastallPath    <- "/opt/bio/ncbi/bin/blastall"
+etrainBioCPath  <- "/isilon/biodiversity/pipelines/maker-2.10/augustus.2.7/bin/etraining"
+newSpeciesPath  <- "/isilon/biodiversity/pipelines/maker-2.10/augustus.2.7/scripts/new_species.pl"
+optimAugustPath <- "/isilon/biodiversity/pipelines/maker-2.10/augustus.2.7/scripts/optimize_augustus.pl"
+pathtRNA_scan   <- "/opt/bio/tRNAscan-SE/bin/tRNAscan-SE"
+randomSplitPath <- "/isilon/biodiversity/pipelines/maker-2.10/augustus.2.7/scripts/randomSplit.pl"
+
+# *** Revisit this organization. Perhaps best that all programs be /home/ and databases be in local cfia-ottawa?
+# CFIA-ACIA users home directory programs:
+progPath        <- "/home/CFIA-ACIA/girouxeml/prog/"
+aedCDFgenePath  <- paste(progPath, "scripts_pl/AED_cdf_generator.pl", sep = "")
+blastpPath      <- paste(progPath, "miniconda/bin/blastp", sep = "")
+buscoPath       <- paste(progPath, "busco/scripts/run_BUSCO.py", sep = "")
+fathomPath      <- paste(progPath, "snap/fathom", sep = "")
+forgePath       <- paste(progPath, "snap/forge", sep = "")
+gagPath         <- paste(progPath, "gag/genomeannotation-GAG-40ea515/gag.py", sep = "")
+genemarkPath    <- paste(progPath, "genemark-es/gmes_petap.pl", sep = "") 
+hmmAssemPath    <- paste(progPath, "snap/hmm-assembler.pl", sep = "") 
+iprUpdateMaker  <- paste(progPath, "maker/bin/ipr_update_gff", sep = "")
+iprscan2gff3    <- paste(progPath, "maker/bin/iprscan2gff3", sep = "")
+jbrowseFlatfile2json <- paste(progPath, "jbrowse/JBrowse-1.12.3/bin/flatfile-to-json.pl", sep = "")
+jbrowsePrepRefsSeqsPath <- paste(progPath, "jbrowse/JBrowse-1.12.3/bin/prepare-refseqs.pl", sep = "") 
+makerDatMapPath <- paste(progPath, "maker/bin/map_data_ids", sep = "")
+makerMapFasta   <- paste(progPath, "maker/bin/map_fasta_ids", sep = "")
+makerFastamerge <- paste(progPath, "maker/bin/fasta_merge", sep = "") 
+makerFuncFasta  <- paste(progPath, "maker/bin/maker_functional_fasta", sep = "") 
+makerFuncGff    <- paste(progPath, "maker/bin/maker_functional_gff", sep = "")
+makerGFF3merge  <- paste(progPath, "maker/bin/gff3_merge", sep = "") 
+makerIPR2gff3   <- paste(progPath, "maker/bin/iprscan2gff3", sep = "")
+makerIPRupdate  <- paste(progPath, "maker/bin/ipr_update_gff", sep = "")
+makerMapGffPath <- paste(progPath, "maker/bin/map_gff_ids", sep = "")
+makerMapPath    <- paste(progPath, "maker/bin/maker_map_ids", sep = "")
+makerPath       <- paste(progPath, "maker/bin/maker", sep = "") 
+maker2zffPath   <- paste(progPath, "maker/bin/maker2zff", sep = "") 
+pathtRNA_scan   <- paste(progPath, "tRNAscan-SE/bin/tRNAscan-SE", sep = "") 
+processRepeatsPath <- paste(progPath, "RepeatMasker/ProcessRepeats", sep = "") 
+repMaskerPath   <- paste(progPath, "RepeatMasker/RepeatMasker", sep = "") 
+repModBuildDBPath  <- paste(progPath, "RepeatModeler-open-1.0.11/BuildDatabase", sep = "") 
+repModlerPath   <- paste(progPath, "RepeatModeler-open-1.0.11/RepeatModeler", sep = "") 
+rmOutToGFF3Path <- paste(progPath, "RepeatMasker/util/rmOutToGFF3.pl", sep = "")
+tbl2asnPath     <- paste(progPath, "linux64.tbl2asn", sep = "")
+scriptsPath     <- paste(progPath, "scripts_pl/", sep = "")
+fixGAGNamePath  <- paste(scriptsPath, "fix_GAG_Name.sh", sep = "")
+zff2augGbkPath   <- paste(scriptsPath, "zff2augustus_gbk.pl", sep = "")
+
+# CFIA-Ottawa-Fallowfield user directory programs:
+programsPath    <- "/isilon/cfia-ottawa-fallowfield/users/girouxeml/prog/"
+buscoPezDataSet <- paste(programsPath, "busco_datasets/pezizomycotina_odb9/", sep = "")
+interproPath    <- paste(programsPath, "my_interproscan/interproscan-5.24-63.0/interproscan.sh", sep = "")
+uniProtSwissPDB <- paste(programsPath, "databases/uniprot_sprot.fasta", sep = "")
+```
+
+**Define paths to reference files used:**  
+**Note,** require entire proteome from a  min of two related species and perhaps all of UniProt/SwissProt. 
+See advice for multiple proteomes for homology: https://groups.google.com/forum/#!topic/maker-devel/jbBm_4ycFU8
+  
+**_Marssonina brunnea_** available at: https://www.ncbi.nlm.nih.gov/genome/?term=txid698440[orgn]:
+ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/298/775/GCA_000298775.1_ASM29877v1  
+  
+For **_Sclerotinia sclerotiorum_**: https://www.ncbi.nlm.nih.gov/genome/?term=txid5180[orgn]   
+  
+All others available from ensemble. Retrieved them based on filtering:  
+*http://www.uniprot.org/proteomes/?query=reference%3Ayes+AND+taxonomy%3A%22Eukaryota+%5B2759%5D%22+AND+taxonomy%3AHelotiales&sort=score*
+```{r}
+referencesPath  <- paste(sharedPath, "References/", sep = "")
+cdnaBotcinPath  <- paste(referencesPath, "Botrytis_cinerea.ASM83294v1.cdna.all.fa", sep = "")
+gff3BotcinPath  <- paste(referencesPath, "Botrytis_cinerea.ASM83294v1.37.gff3", sep = "")
+pepBotcinPath   <- paste(referencesPath, "Botrytis_cinerea.ASM83294v1.pep.all.fa", sep = "")
+pepBotcinT4Path <- paste(referencesPath, "Botrytis_cinerea_t4.BotFuc_Mar2011.pep.all.fa", sep = "")
+pepGlarlozPath  <- paste(referencesPath, "Glarea_lozoyensis_atcc_20868.GLAREA.pep.all.fa", sep = "")
+pepMarbrunPath  <- paste(referencesPath, "Marsonnina_brunnea_GCA_000298775.1_ASM29877v1_protein.faa", sep = "")
+pepPhiascoPath  <- paste(referencesPath, "Phialocephala_scopiformis.Phisc1.pep.all.fa", sep = "")
+pepPhiasubPath  <- paste(referencesPath, "Phialocephala_subalpina.PAC_version_1.pep.all.fa", sep = "")
+pepRhyncomPath  <- paste(referencesPath, "Rhynchosporium_commune.version_1.pep.all.fa", sep = "")
+pepScleborPath  <- paste(referencesPath, "Sclerotinia_borealis_f_4128.SBOR_1.pep.all.fa", sep = "")
+pepSclerscPath  <- paste(referencesPath, "Scerotinia_sclerotiorum_GCF_000146945.2_ASM14694v2_protein.faa", sep = "")
+```
+
+**Read in the metadata table:**  
+We need to specify where we put the assembly files for our genomes. We had this in our metadataAssembly table 
+from our previous script we ran called "RstudioScript-June2017_LachnellulaSpp_assemblies.Rmd"
+We can either read in the table, or take what we have from the environment. Reading in the table is better.
+```{r}
+library(data.table)
+metadataAssemblies <- fread(paste(sharedPathAn, "Lachnellula_genomes_MetadataAssembly.csv", sep = ""),
+                            sep = "auto", header = TRUE)
+metadataAssemblies[, V1:=NULL]
+```
+
+**Prepare for post-MAKER processing***
+```{r}
+for(k in 1:nrow(metadataAssemblies)){
+    dir.create(paste(metadataAssemblies$RepeatDBPath[k], "postMakerProcessing", sep = ""), showWarnings = TRUE, recursive = FALSE)}
+metadataAssemblies$postMaker <- paste(metadataAssemblies$RepeatDBPath, "postMakerProcessing/", sep = "")
+
+for(k in 1:nrow(metadataAssemblies)){
+    dir.create(paste(metadataAssemblies$RepeatDBPath[k], "postMakerProcessing/gag", sep = ""), showWarnings = TRUE, recursive = FALSE)}
+metadataAssemblies$postMakerGAG <- paste(metadataAssemblies$RepeatDBPath, "postMakerProcessing/gag/", sep = "")
+```
+
+Move the GFF3 files that were fixed post-MAKER using as guide the errors generated by JBrowse to the 
+new directory just created.
+```{r}
+cmd <- with(metadataAssemblies, 
+            paste("mv ", paste(metadataAssemblies$makerRnd3_OutputPath, metadataAssemblies$SppAbbrv, "_rnd3.all.maker_jb.gff3", sep = ""), 
+                  " ", postMaker, sep = ""))
+
+sapply(cmd, function(x) system(x))
+```
+*** Over here - edits to keep the original names of the fasta files in the chunk below:
+
+Copy the trasncripts, proteins, and tRNA fasta files that were generated from the last round of MAKER
+to the new post MAKER directory, then compress files in the last MAKER run directory.
+```{r}
+prefix <- "postMaker_cp_gz_fasta"
+cmd    <- with(metadataAssemblies, 
+               paste("cp ", paste(metadataAssemblies$makerRnd3_OutputPath, metadataAssemblies$SppAbbrv,
+                                  "_rnd3.all.maker.transcripts.fasta", sep = ""), 
+                     " ", paste(postMaker, "/; ", sep = ""), 
+                     "cp ", paste(metadataAssemblies$makerRnd3_OutputPath, metadataAssemblies$SppAbbrv,
+                                  "_rnd3.all.maker.proteins.fasta", sep = ""), 
+                     " ", paste(postMaker,"/; ", sep = ""),
+                     "cp ", paste(metadataAssemblies$makerRnd3_OutputPath, metadataAssemblies$SppAbbrv,
+                                  "_rnd3.all.maker.trnascan.transcripts.fasta", sep = ""), 
+                     " ", paste(postMaker, "/;", sep = ""),
+                     "gzip ", paste(metadataAssemblies$makerRnd3_OutputPath, "*", sep = ""), sep = ""))
+
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+Record the JBrowse-fixed gff3 files in the metadata table:
+```{r}
+metadataAssemblies$fixed_GFF3_jb <- paste(metadataAssemblies$postMaker, metadataAssemblies$SppAbbrv, "_rnd3.all.maker_jb.gff3", sep = "")
+```
+
+### Generation of NCBI Submission Files with GAG - to validate and fix gff errors:    
+We can generate our genome submission files using the Genome Annotation Generator (GAG) prior to running BLAST and InterProScan.
+What we focus on from this are the validation and error files that are generated that will tell us all the gene features that are invalid, such as proteins with internal stops detected, or incomplete genes or missing stop codons, etc., and we go through these and fix all the errors. We then re-run GAG iteratively until no more errors are present. Once all the errors are solved, then we use InterProscan and Blast and whatever else for annotation. This way we don’t waste our time annotating invalid features. 
+```{r}
+prefix <- "gag_pass1"
+cmd    <- with(metadataAssemblies,
+               paste("cd ", postMakerGAG, " && ",
+                     "python ", gagPath, " -f ", FixedNewAssemName,
+                     " -g ", fixed_GFF3_jb, 
+                     " --fix_start_stop -ris 10 ", 
+                     " -o ", paste(postMakerGAG, "gag_pass1_fix_start_stop_short_introns", sep = ""), sep = ""))
+cmd[1]
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)               
+```
+
+Record the path to the post-Maker GAG pass1 directory to the metadata table:
+```{r}
+metadataAssemblies$postMakerGAG_pass1 <- paste(metadataAssemblies$postMakerGAG, "gag_pass1_fix_start_stop_short_introns/", sep = "")
+```
+
+### Running tbl2asn on the GAG pass1 output      
+**Rename the GAG gff and fasta files with species abbreviations for tbl2asn:**    
+```{r}
+cmd <- with(metadataAssemblies, 
+            paste("mv ", paste(postMakerGAG_pass1, "genome.tbl", sep = ""), 
+                  paste(postMakerGAG_pass1, SppAbbrv, ".tbl; ", sep = ""),
+                  "mv ", paste(postMakerGAG_pass1, "genome.fasta", sep = ""), 
+                  paste(postMakerGAG_pass1, SppAbbrv, ".fsa", sep = ""),
+                  sep = ""))
+cmd[1]
+sapply(cmd, function(x) system(x))
+```
+
+**Create the tbl2asn directory:**
+```{}
+for(k in 1:nrow(metadataAssemblies)){
+    dir.create(paste(metadataAssemblies$postMakerGAG_pass1[k], "tbl2asn", sep = ""), showWarnings = TRUE, recursive = FALSE)}
+```
+
+**Copy the required GAG files to the tbl2asn directory:**  
+```{r}
+cmd <- with(metadataAssemblies, 
+            paste("cp ", paste(postMakerGAG_pass1, "L*", sep = ""), 
+                  " ", paste(postMakerGAG_pass1, "tbl2asn/", sep = ""),
+                  sep = ""))
+cmd[1]
+sapply(cmd, function(x) system(x))
+```
+
+**Copy the generic NCBI submission template file to the tbl2asn directory, while renaming it with species abbreviation:**   
+We require that the genome fasta, gff and tamplate files that are needed to run tbl2asn to be in the folder where we run the tbl2asn program, 
+and that they share the same prefix for the program to work.
+```{r}
+cmd <- with(metadataAssemblies, 
+            paste("cp ", paste(sharedPathAn, "template.sbt", sep = ""), 
+                  " ", paste(postMakerGAG_pass1, "tbl2asn/", SppAbbrv, "_template.sbt", sep = ""),
+                  sep = ""))
+cmd[1]
+sapply(cmd, function(x) system(x))
+```
+
+**Run tbl2asn:**
+```{r}
+cmd    <- with(metadataAssemblies,
+               paste("cd ", paste(postMakerGAG_pass1, "tbl2asn/", sep = ""),  " && ",
+                     tbl2asnPath, ' -j "[organism=', SppAbbrv, 'EG1201][strain=ABC 123]"', 
+                     " -t ", paste(SppAbbrv, "_template.sbt", sep = ""),
+                     " -p. -M n -Z discrep -a r1k -c b -V b", sep = ""))
+cmd[1]
+sapply(cmd, function(x) system(x))
+```
+
+**To show the error summary output for each genome set on the console in RStudio:**  
+After running tbl2asn, we look at the errorsummary.txt file generated to see if our genome gff and fasta have errors
+that will prevent the generation of valid NCBI submission files. While we must address all "ERROR" instances,
+we can generally ignore the "WARNING" messages.
+```{r}
+for(k in 1:nrow(metadataAssemblies)) {
+  cat(c(k, paste(metadataAssemblies$SppAbbrv[k])))
+  cat("\n")
+  system(paste("tail ", paste(metadataAssemblies$postMakerGAG_pass1[k], "tbl2asn/errorsummary.val", sep = ""), 
+               " | head -n 5" , sep=""))
+  cat("\n")}
+```
+
+Fix the errors captured in this document.  
+Run gag for a second round to make sure all the errors were fixed:
+```{r}
+prefix <- "gag_pass2"
+cmd    <- with(metadataAssemblies,
+               paste("cd ", paste(postMaker, "gag/", sep = ""), " && ",
+                     "python ", gagPath, " -f ", paste(postMaker, "gag/", postMakerGAG_pass1, SppAbbrv, ".fsa", sep = ""),
+                     " -g ", paste(postMaker, "gag/", postMakerGAG_pass1, "genome.edit.gff", sep = ""),
+                     " -o ", paste(postMaker, "gag/", "gag_pass2_eval", sep = ""), sep = ""))
+cmd[1]
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix)               
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+Record the path to the post-Maker GAG pass2 directory to the metadata table:
+```{r}
+metadataAssemblies$postMakerGAG_pass2 <- paste(metadataAssemblies$postMakerGAG, "gag_pass2_eval/", sep = "")
+```
+
+*** Over here - enter this part of the script with the assemblies with the contigs less <200 bp removed, after
+editing the gff3 files to have the tRNA info. Fix this up manually for now, in each genome directory.
+$ prinseq-lite -min_len 200 -fasta Lari_gag_edited.fsa -out_good Lari_gag_edited.min200  
+BUT note that I didn't rename the fasta the way it's written for prinseq above until a couple of chunks below.
+
+Run tbl2asn:
+```{r}
+prefix <- "gag_pass2_tbl2asn"
+cmd    <- with(metadataAssemblies,
+               paste(# Create the tbl2asn dir:
+                     "cd ", paste(postMaker, "gag/", postMakerGAG_pass2, sep = ""), " && ",
+                     "mkdir tbl2asn; ", 
+                     
+                     # *** Over here, I removed the sed commands acting onthe genome.tbl.
+                     # Move the genome.tbl to proper suffix:
+                     "cd ", paste(postMaker, "gag/", postMakerGAG_pass2, sep = ""), " && ",
+                     "mv genome.tbl ", paste(SppAbbrv, ".tbl", sep = ""), "; ",
+                     
+                     # Rename the genome fasta to work with tbl2asn:
+                     "cd ", paste(postMaker, "gag/", postMakerGAG_pass2, sep = ""), " && ",
+                     "mv genome.fasta ", paste(SppAbbrv, ".fsa", sep = ""), "; ",
+                     
+                     # Bring in a copy of the template.sbt file, and give the correct prefix:
+                     "cd ", paste(postMaker, "gag/", postMakerGAG_pass2, sep = ""), " && ",
+                     "cp ", paste(sharedPathAn, "template.sbt", sep = ""), 
+                     " ", paste(postMaker, "gag/", postMakerGAG_pass2, "tbl2asn/", SppAbbrv, "_template.sbt", sep = ""), "; ",
+                     
+                     # Copy the .fsa and .tbl to tbl2asn directory:
+                     "cd ", paste(postMaker, "gag/", postMakerGAG_pass2, sep = ""), " && ",
+                     "cp L* tbl2asn/", "; ",
+                     
+                     # Run tbl2asn:
+                     "cd ", paste(postMaker, "gag/", postMakerGAG_pass2, "tbl2asn/", sep = ""), " && ",
+                     tbl2asnPath, ' -j "[organism=', SppAbbrv, 'EG1201][strain=ABC 123]"',   
+                     " -t ", paste(SppAbbrv, "_template.sbt", sep = ""), 
+                     " -p. -M n -Z discrep -a r1k -c b -V b", sep = ""))
+
+cmd[1]
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix) 
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+*** Over here - did things manually to get the egited gff and the genome.fsa with <200bp removed. Also - maybe not adding species 
+abbreviation suffix? Is it really necessary?
+Copy the gff and fasta files from the final GAG edits folder, into the postMakerProcessing directory, with the species 
+abbreviation suffix.
+```{r}
+previousGagDir <- "gag_pass1_fix_start_stop_short_introns/"
+cmd <- with(metadataAssemblies,
+            paste("cp ", paste(postMaker, "gag/", previousGagDir, "genome.edit.gff", sep = ""),
+                  " ", paste(postMaker, SppAbbrv, "_gag_edited.gff", sep = ""),  " ;",
+                  "cp ", paste(postMaker, "gag/", previousGagDir, SppAbbrv, ".fsa", sep = ""),
+                  " ", paste(postMaker, SppAbbrv, "_gag_edited.fsa", sep = ""), sep = ""))
+cmd[1]
+sapply(cmd, function(x) system(x))
+```
+
+*** Over here - following paths need to be confirmed/fixed: - Based on comments above the previous chunk.
+Add the paths to the edited gff and fasta files to the metadataAssemblies table:
+```{r}
+metadataAssemblies$fixed_gag_gff <- paste(metadataAssemblies$postMaker, metadataAssemblies$SppAbbrv, "_gag_edited.gff", sep = "")
+metadataAssemblies$fixed_gag_fsa <- paste(metadataAssemblies$postMaker, metadataAssemblies$SppAbbrv, "_gag_edited.fsa", sep = "")
+```
+
+Editing the genome.proteins.fasta that were generated in the final round of GAG:    
+```{r}
+# Make a copy of the proteins fasta, with a new name that will indicate stops were removed:
+cmd <- with(metadataAssemblies,
+            paste("cp ", paste(postMakerGAG_pass2, "genome.proteins.fasta", sep = ""),
+                  " ", paste(postMakerGAG_pass2, SppAbbrv, ".proteins.gagPass2.noStops.fasta", sep = ""),
+                  sep = ""))
+cmd[2:7]
+sapply(cmd[2:7], function(x) system(x))
+
+# Use sed to remove stop codon symbols:
+cmd <- with(metadataAssemblies,
+            paste("sed -i 's/*//g' ", 
+                  paste(postMakerGAG_pass2, SppAbbrv, ".proteins.gagPass2.noStops.fasta", sep = ""),
+                  sep = ""))
+sapply(cmd[2:7], function(x) system(x))
+
+# other edits that may be good - fixing the protein headers:
+cmd <- with(metadataAssemblies,
+            paste("sed -i 's/>protein|/>/g' ", 
+                  paste(postMakerGAG_pass2, SppAbbrv, ".proteins.gagPass2.noStops.fasta", sep = ""),
+                  sep = ""))
+#cmd[6]
+sapply(cmd[2:7], function(x) system(x))
+
+cmd <- with(metadataAssemblies,
+            paste("sed -i 's/ ID=.*$//g' ", 
+                  paste(postMakerGAG_pass2, SppAbbrv, ".proteins.gagPass2.noStops.fasta", sep = ""),
+                  sep = ""))
+#cmd[6]
+sapply(cmd[2:7], function(x) system(x))
+```
+
+If all is good, copy it up to the postprocessing directory:  
+```{r}
+cmd <- with(metadataAssemblies,
+            paste("cp ", paste(postMakerGAG_pass2, SppAbbrv, ".proteins.gagPass2.noStops.fasta", sep = ""),
+                  " ", postMaker, sep = ""))
+#cmd[5]
+sapply(cmd[2:7], function(x) system(x))
+```
+
+### Run a BLASTp on the GAG-edited proteins fasta file against the uniprot-swiss-prot protein database.  
+Make sure you run a protein to protein BLAST and that you use output format 6. Make sure to point to the local blastp which
+works with the -max_hsps option. The one on the biocluster doesn't have this option. The version installed in miniconda/bin is 2.2.31+.
+```{r}
+prefix <- "post_maker_BLASTp_uniProt_SwissProt_qsub"
+node   <- 20
+cmd    <- with(metadataAssemblies,
+               paste(blastpPath,  
+                     " -num_threads ", node, 
+                     " -query ", paste(postMaker, SppAbbrv, ".proteins.gagPass2.noStops.fasta", sep = ""),
+                     " -db ", uniProtSwissPDB, " -evalue 1e-6 -max_hsps 1 -max_target_seqs 1 -outfmt 6 ",
+                     " -out ", paste(postMaker, SppAbbrv, "_uniProtSwissProt_blast.out", sep = ""), 
+                     sep = ""))
+cmd[1]
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix, node) 
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+### Run InterProScan on the MAKER proteins fasta files.  
+**Important:  
+In order to run our local installation of InterProScan with our local installation of the match lookup service, we need to have
+the lookup service running on the cluster first. We have the service set up on biocomp-0-3 and need to have it running specifically 
+on that node:  
+$ qlogin -l h=biocomp-0-3  
+$ cd /isilon/cfia-ottawa-fallowfield/users/girouxeml/prog/i5_lookup_service/lookup_service_5.24-63.0  
+$ java -Xmx2000m -jar server-5.24-63.0-jetty-console.war --headless --port 8080 &  
+  
+Now we can run InterProScan:  
+
+Here we run our proteins fasta files against the local installation of InterProScan. Not all functionallity is available since there are some components that require glbic updates for a couple of the database searches. The main thing here is to make sure the output is in the format we require for the next step in MAKER which extracts the functional annotation obtained from InterProScan to the annotations in our GFF3 file. We can't run this as a qsub due to some adjustments that need to be made to cluster mode that are not working.  
+
+This works:  
+Use the proteins fasta generated from the final round of GAG, with the fasta names edited to look like Maker.  
+Run IPR scan with lookup service, with only pfam.  
+$ ~/prog/my_interproscan/interproscan-5.24-63.0/interproscan.sh -appl pfam -f TSV -iprlookup -goterms --cpu 17 -pa -t p -i Lari.proteins.gagPass2.noStops.fasta -o output.iprscan
+
+Remove the temp/ directories created once BLAST and InterProScan runs have completed:
+```{r}
+unlink(paste(metadataAssemblies$postMaker, "temp", sep = ""), recursive = TRUE)
+```
+
+
+### Edit InterProScan output:  
+After running InterProScan, we need to edit all instances of the abbreviation "Pfam" to "PFAM". The lower-case form results in 
+errors when running NCBI's tbl2asn.
+```{r}
+cmd <- with(metadataAssemblies,
+            paste("sed -i 's/Pfam/PFAM/g' ", paste(postMaker, "output.iprscan", sep = ""), sep = ""))
+cmd[1]
+sapply(cmd[2:7], function(x) system(x))
+```
+
+Format the iprscan output to a 3-column table with Annie.py:  
+```{r}
+cmd <- with(metadataAssemblies, paste("cd ", postMaker, " && ", anniePath, " -ipr output.iprscan", sep = ""))
+cmd[1]
+sapply(cmd[1], function(x) system(x))
+```  
+
+Format the blast output to a 3-column table with Annie.py:  
+```{r}
+cmd <- with(metadataAssemblies, paste("cd ", postMaker, " && ", anniePath, " -b ", SppAbbrv, "_uniProtSwissProt_blast.out",
+                                      " -g genome.edit.gff ", 
+                                      " -db ", uniProtSwissPDB, sep = ""))
+cmd[1]
+sapply(cmd[2:7], function(x) system(x))
+```
+
+Add the Annie annotations to the gff using GAG:  
+```{r}
+cmd <- with(metadataAssemblies, paste("cd ", postMaker, " && ", gagPath, 
+                                      " -f ", SppAbbrv, "_gag_edited.min200.fasta",
+                                      " -g genome.edit.gff ", 
+                                      " -a annie_output.tsv", 
+                                      " -o gag_add_Annie_annotations", sep = ""))
+cmd[1]
+sapply(cmd[2:7], function(x) system(x))
+```
+  
+Make a copy of the genome.gff from the GAG output:
+```{r}
+cmd <- with(metadataAssemblies, paste("cp ", paste(postMaker, "gag_add_Annie_annotations/genome.gff", sep = ""),
+                                      " ", paste(postMaker, "Annie.Gag.genome.gff", sep = ""), sep = ""))
+cmd[1]
+sapply(cmd[2:7], function(x) system(x))
+```
+
+Generate the ID mapping file:
+```{r}
+# Lari Locus_tag prefix LARI1
+locus_tag_prefixes <- c("LARI1", "LCER1", "LHYA1", "LOCC1", "LSUB1", "LSUE1", "LAWI1")
+metadataAssemblies$locusTagPrefix <- locus_tag_prefixes
+
+# Add the strain/CBS info - might as well. But should have been in original metadata table.
+strainCBS <- c("CBS 203.66", "CBS 625.97", "CBS 185.66", "CBS 160.35", "CBS 197.66", "CBS 268.59", "CBS 172.35")
+metadataAssemblies$strain_CBS <- strainCBS    
+
+justify = 6
+abrvGene = "G"
+abrvTrans = "T"
+cmd <- with(metadataAssemblies,
+            paste("perl ", makerMapPath, " --prefix ", paste(locusTagPrefix, "_", sep = ""), 
+                  " --justify ", justify, " --abrv_gene ", abrvGene, " --abrv_tran ", abrvTrans, 
+                  " ", paste(postMaker, "Annie.Gag.genome.gff", sep = ""), 
+                  " > ", paste(postMaker, SppAbbrv, ".map", sep = "")))
+cmd[1]
+sapply(cmd[2:7], function(x) system(x))
+```
+
+Remove the -RA from the mapping IDs: 
+```{r}
+cmd <- with(metadataAssemblies, paste("sed -i 's/-RA//g' ", paste(postMaker, SppAbbrv, ".map", sep = "")))
+cmd[1]
+sapply(cmd[2:7], function(x) system(x))
+```
+
+Complete the in-place renaming of the gff:  
+```{r}
+cmd <- with(metadataAssemblies, paste(makerMapGffPath, " ", paste(postMaker, SppAbbrv, ".map", sep = ""),
+                                      " ", paste(postMaker, "Annie.Gag.genome.gff", sep = ""), 
+                                      sep = ""))
+cmd[1]
+sapply(cmd[2:7], function(x) system(x))
+```
+
+Prepare for renaming of fasta and blastp and ipscan outputs:  
+```{r}
+cmd <- with(metadataAssemblies, paste("cp ", paste(postMaker, SppAbbrv, ".proteins.gagPass2.noStops.fasta", sep = ""),
+                                      " ", paste(postMaker, SppAbbrv, ".proteins.gagPass2.noStops.renamed.fasta", sep = "")))
+cmd2 <- with(metadataAssemblies, paste("cp ", paste(postMaker, SppAbbrv, "_uniProtSwissProt_blast.out", sep = ""),
+                                       " ", paste(postMaker, SppAbbrv, "_uniProtSwissProt_blast.renamed.out", sep = "")))
+cmd3 <- with(metadataAssemblies, paste("cp ", paste(postMaker, "output.iprscan", sep = ""),
+                                       " ", paste(postMaker, "output.renamed.iprscan", sep = "")))
+cmd[1]; cmd2[1]; cmd3[1]
+sapply(cmd[2:7], function(x) system(x))
+sapply(cmd2[2:7], function(x) system(x))
+sapply(cmd3[2:7], function(x) system(x))
+```
+
+Renaming and updating fasta and GFF with new Blastp and Interproscan information:  
+```{r}
+cmd  <- with(metadataAssemblies, paste(makerMapFasta, " ", paste(postMaker, SppAbbrv, ".map", sep = ""), " ", 
+                                       paste(postMaker, SppAbbrv, ".proteins.gagPass2.noStops.renamed.fasta", sep = ""), sep = ""))
+
+cmd2 <- with(metadataAssemblies, paste(makerDatMapPath, " ", paste(postMaker, SppAbbrv, ".map", sep = ""), " ", 
+                                       paste(postMaker, SppAbbrv, "_uniProtSwissProt_blast.renamed.out", sep = ""), sep = ""))
+
+cmd3 <- with(metadataAssemblies, paste(makerDatMapPath, " ", paste(postMaker, SppAbbrv, ".map", sep = ""), " ", 
+                                       paste(postMaker, "output.renamed.iprscan", sep = ""), sep = ""))
+
+cmd4 <- with(metadataAssemblies, paste(makerIPRupdate, " ", paste(postMaker, "Annie.Gag.genome.gff", sep = ""), " ", 
+                                       paste(postMaker, "output.renamed.iprscan", sep = ""), " > ", 
+                                       paste(postMaker, "Annie.Gag.genome.2.gff", sep = ""), sep = ""))
+
+cmd5 <- with(metadataAssemblies, paste(makerIPR2gff3, " ", paste(postMaker, "output.renamed.iprscan", sep = ""), " ", 
+                                       paste(postMaker, "Annie.Gag.genome.gff", sep = ""), " >> ", 
+                                       paste(postMaker, "Annie.Gag.genome.2.gff", sep = ""), sep = ""))
+
+cmd6 <- with(metadataAssemblies, paste("mv ", paste(postMaker, "Annie.Gag.genome.2.gff", sep = ""), " ",
+                                       paste(postMaker, "Annie.Gag.genome.gff", sep = ""), sep = ""))
+
+cmd7 <- with(metadataAssemblies, paste(makerFuncGff, " ", uniProtSwissPDB, " ", 
+                                       paste(postMaker, SppAbbrv, "_uniProtSwissProt_blast.renamed.out", sep = ""), " ",
+                                       paste(postMaker, "Annie.Gag.genome.gff", sep = ""), " > ",
+                                       paste(postMaker, "Annie.Gag.genome.2.gff", sep = "")))
+
+cmd8 <- with(metadataAssemblies, paste(makerFuncFasta, " ", uniProtSwissPDB, " ", 
+                                       paste(postMaker, SppAbbrv, "_uniProtSwissProt_blast.renamed.out", sep = ""), " ",
+                                       paste(postMaker, SppAbbrv, ".proteins.gagPass2.noStops.renamed.fasta", sep = ""), " > ",
+                                       paste(postMaker, SppAbbrv, ".proteins.gagPass2.noStops.renamed.2.fasta", sep = "")))
+
+cmd9 <- with(metadataAssemblies, paste("mv ", paste(postMaker, SppAbbrv, ".proteins.gagPass2.noStops.renamed.2.fasta", sep = ""), " ",
+                                       paste(postMaker, SppAbbrv, ".proteins.gagPass2.noStops.renamed.fasta", sep = ""), " ; ", 
+                                       "mv ", paste(postMaker, "Annie.Gag.genome.2.gff", sep = ""), " ",
+                                       paste(postMaker, "Annie.Gag.genome.gff", sep = ""), sep = ""))
+
+sapply(cmd[2:7], function(x) system(x)); sapply(cmd2[2:7], function(x) system(x)); sapply(cmd3[2:7], function(x) system(x))
+sapply(cmd4[2:7], function(x) system(x)); sapply(cmd5[2:7], function(x) system(x)); sapply(cmd6[2:7], function(x) system(x))
+sapply(cmd7[2:7], function(x) system(x)); sapply(cmd8[2:7], function(x) system(x)); sapply(cmd9[2:7], function(x) system(x))
+```
+
+Use GAG to generate the final NCBI tbl for tbl2asn:  
+```{r}
+cmd <- with(metadataAssemblies, paste("cd ", postMaker, " && ", gagPath, 
+                                      " -f ", paste(postMaker, "gag_add_Annie_annotations/genome.fasta", sep = ""),
+                                      " -g ", "Annie.Gag.genome.gff", 
+                                      " -o gag_final_NCBI_tbl_tbl2asn", sep = ""))
+cmd[1]
+sapply(cmd[2:7], function(x) system(x))
+```
+
+Record the path to the final GAG directory in the metadata table:
+```{r}
+metadataAssemblies$postMakerGAG_final <- paste(metadataAssemblies$postMaker, "gag_final_NCBI_tbl_tbl2asn/", sep = "")
+```
+
+**Create the tbl2asn directory:**
+```{r}
+for(k in 1:nrow(metadataAssemblies)){
+    dir.create(paste(metadataAssemblies$postMakerGAG_final[k], "tbl2asn", sep = ""), showWarnings = TRUE, recursive = FALSE)}
+```
+
+Run the final tbl2asn:
+```{r}
+# Copy the NCBI template file to the tbl2asn directory:
+for(k in 2:nrow(metadataAssemblies)){
+    file.copy(from = paste(sharedPathAn, metadataAssemblies$SppAbbrv[k], "_template.sbt", sep = ""),
+              to = paste(metadataAssemblies$postMakerGAG_final[k], "tbl2asn/", metadataAssemblies$SppAbbrv[k], "_template.sbt", sep = ""),
+              overwrite = FALSE, recursive = FALSE, copy.mode = TRUE, copy.date = FALSE)
+}
+
+# Copy the tbl file to the tbl2asn directory:
+for(k in 2:nrow(metadataAssemblies)){
+    file.copy(from = paste(metadataAssemblies$postMakerGAG_final[k], "genome.tbl", sep = ""),
+              to = paste(metadataAssemblies$postMakerGAG_final[k], "tbl2asn/", metadataAssemblies$SppAbbrv[k], ".tbl", sep = ""),
+              overwrite = FALSE, recursive = FALSE, copy.mode = TRUE, copy.date = FALSE)
+}
+
+# Copy the assembly fasta file to the tbl2asn directory:
+for(k in 2:nrow(metadataAssemblies)){
+    file.copy(from = paste(metadataAssemblies$postMakerGAG_final[k], "genome.fasta", sep = ""),
+              to = paste(metadataAssemblies$postMakerGAG_final[k], "tbl2asn/", metadataAssemblies$SppAbbrv[k], ".fsa", sep = ""),
+              overwrite = FALSE, recursive = FALSE, copy.mode = TRUE, copy.date = FALSE)
+}
+
+# Run tbl2asn:
+metadataAssemblies$organism <- metadataAssemblies$ScientificName
+metadataAssemblies$organism <- gsub("_", " ", metadataAssemblies$organism)
+prefix <- "post_maker_final_tbl2asn"
+
+# This is the command that works for NCBI, confirmed by NCBI. Don't add other options!
+cmd <- with(metadataAssemblies,
+            paste("cd ", paste(postMakerGAG_final, "tbl2asn/", sep = ""), " && ",
+                  tbl2asnPath, ' -j "[organism=', organism, '][strain=', strain_CBS,']"',   
+                  " -t ", paste(SppAbbrv, "_template.sbt", sep = ""), 
+                  " -p. -M n -Z discrep -a r1k -V b -X E ", sep = ""))
+
+cmd[7]
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd[2:7], prefix, suffix, node) 
+```
+
+**To remove the output files after you are done:**
+```{r}
+RemoveQsubTempFiles(sharedPathAn, prefix)
+```
+
+**To show the error summary output for each genome set on the console in RStudio:**  
+After running tbl2asn, we look at the errorsummary.txt file generated to see if our genome gff and fasta have errors
+that will prevent the generation of valid NCBI submission files. While we must address all "ERROR" instances,
+we can generally ignore the "WARNING" messages.
+```{r}
+for(k in 1:nrow(metadataAssemblies)) {
+  cat(c(k, paste(metadataAssemblies$SppAbbrv[k])))
+  cat("\n")
+  system(paste("tail ", paste(metadataAssemblies$postMakerGAG_final[k], "tbl2asn/errorsummary.val", sep = ""), 
+               " | head -n 15" , sep=""))
+  cat("\n")}
+```
+If all is good, we may want to get a fresh summary of the quality of our assembly and annotation. We can use BUSCO for this:
+**iii. Run BUSCO using the Augustus species HMM to look at the results:**  
+We can run BUSCO using the Augustus species HMM we obtained, without having to train Augustus. Only include the 
+transcript sequences, and not the 1000 bp on each side, and be sure to take the best (i.e., longest) transcript for
+each gene so we aren't artificially seeding duplicates. We could also run it on the best protein sequence per gene
+instead.  
+```{r}
+prefix <- "final_NCBI_submissions_eval_with_Busco"
+node   <- 20
+cmd    <- with(metadataAssemblies,
+               paste("cd ", postMakerGAG_final, " && ",
+                     "python ", buscoPath, " -i genome.mrna.fasta ",
+                     " -o annotation_eval ", " -c ", node,
+                     " -l ", buscoPezDataSet, " -m transcriptome -sp ", ScientificName, "_AugRnd2", " -z --augustus_parameters='--progress=true'",
+                     " --restart  --force ", sep = ""))
+cmd[1]
+suffix <- ".sub"; cat(bashDirections); MakeQsubs(cmd, prefix, suffix, node)
+# Note, if the run fails, restart the run with the following "--restart", it will continue from where it left off. However, check the 
+# config.ini file in ~/prog/busco/config/ to make sure that restart is set to True, and that you adjust to the correct cpus number.
+```
+
+
+
+Submit the final .sqn files to NCBI. Fix errors that they find.
+
+The "Note" feature in the 9th column is lost when using GAG. Below I'm trying to see if I can re-integrate it for the 
+Lsue assembly:
+```{r}
+library(data.table)
+gffPath <- paste(metadataAssemblies$postMaker[7], "Annie.Gag.genome.gff", sep = "")
+gff     <- read.table(file = gffPath, header = F, sep = "\t",  quote = "", comment.char="#", fill = T)
+gffNotes <- subset(gff, select = c(V3, V9))
+
+# This gets our ID= feild:
+gffNotes$ID <- as.character(lapply(strsplit(as.character(gffNotes$V9), split = ";"), "[",1))
+
+# This gets our Name= feild:
+gffNotes$Name <- as.character(lapply(strsplit(as.character(gffNotes$V9), split = ";Name="), "[",2))
+gffNotes$Name <- as.character(lapply(strsplit(as.character(gffNotes$Name), split = ";"), "[",1))
+
+# This gets our Alias= feild:
+gffNotes$Alias <- as.character(lapply(strsplit(as.character(gffNotes$V9), split = ";Alias="), "[",2))
+gffNotes$Alias <- as.character(lapply(strsplit(as.character(gffNotes$Alias), split = ";"), "[",1))
+
+# This gets our Dbxref= feild:
+gffNotes$Dbxref <- as.character(lapply(strsplit(as.character(gffNotes$V9), split = ";Dbxref="), "[",2))
+gffNotes$Dbxref <- as.character(lapply(strsplit(as.character(gffNotes$Dbxref), split = ";"), "[",1))
+
+# This gets our Ontology_term= feild and whatever comes after it:
+gffNotes$Ontology <- as.character(lapply(strsplit(as.character(gffNotes$V9), split = ";Ontology_term="), "[",2))
+gffNotes$Ontology <- as.character(lapply(strsplit(as.character(gffNotes$Ontology), split = ";"), "[",1))
+
+# This gets our product= feild and whatever comes after it:
+gffNotes$Product <- as.character(lapply(strsplit(as.character(gffNotes$V9), split = ";product="), "[",2))
+gffNotes$Product <- as.character(lapply(strsplit(as.character(gffNotes$Product), split = ";"), "[",1))
+gffNotes$ProductName <- "Product"
+# This gets our Note feild:
+gffNotes$featNotes <- as.character(lapply(strsplit(as.character(gffNotes$V9), split = ";Note="), "[",2))
+gffNotes$featNotes <- as.character(lapply(strsplit(as.character(gffNotes$featNotes), split = ";"), "[",1))
+
+# To combine notes with Ontology terms:
+gffNotes$Notes <- paste(gffNotes$featNotes, " (Ontology_term=", gffNotes$Ontology, ")", sep = "")
+
+getNotesSub <- as.data.table(subset(gffNotes, V3 %in% c("gene", "mRNA", "tRNA")))
+
+getNotesSub$ID <- sub("ID=", "", getNotesSub$ID)
+getNotesSub$Notes <- sub(" \\(Ontology_term=NA\\)", "", getNotesSub$Notes)
+getNotesSub$Notes <- gsub(" / ", "/", getNotesSub$Notes)
+
+getNotesSub$NoteName <- "Note"
+gffNotesTbl <- subset(getNotesSub, select = c(ID, NoteName, Notes))
+
+setkey(gffNotesTbl, Notes)
+gffNotesTbl <- gffNotesTbl[!"Protein of unknown function"]
+gffNotesTbl <- gffNotesTbl[!"NA"]
+
+write.table(gffNotesTbl, file = paste(metadataAssemblies$postMaker[7], "notes_annot_tbl.txt", sep = ""),
+            append = FALSE, sep = "\t", col.names = TRUE, row.names = F, quote = FALSE)
+
+### To correct the product feild:
+gffProductsTbl <- subset(getNotesSub, select = c(ID, ProductName, Product))
+setkey(gffProductsTbl, Product)
+gffProductsTbl <- gffProductsTbl[!is.na(Product),]
+    
+write.table(gffProductsTbl, file = paste(metadataAssemblies$postMaker[7], "products_annot_tbl.txt", sep = ""),
+            append = FALSE, sep = "\t", col.names = TRUE, row.names = F, quote = FALSE)
+
+# To clear up some global environment space:
+rm(gff, gffNotes, gffNotesTbl, getNotesSub, gffProductsTbl)
+```
+
+After manually editing the products in the products file written out, I combined the product and notes txt files into one annotations file.
+I had to change all Product and Note to lower-case, product note. I also replaced all commas, ",", with "%2C" in this annotations file. 
+I used sed -i 's///g' annotations_file for this. 
+In the Annie.gff, after making a copy, I changed all instances of ;Note=, ;note=, ;Product=, ;product=, ;Ontology_term=,
+to ;ScrapNote=, ;ScrapProduct=, ;Scrap_Ontology=, so that I could update my annotations as well as ditch the Ontology annotations
+that already existed in the Annie gff (I added these terms to notes instead of as separate features).
+$ sed -i 's/;Note=/;ScrapNote=/g' Annie.Gag.genome.edited.gff
+$ sed -i 's/;note=/;ScrapNote=/g' Annie.Gag.genome.edited.gff
+$ sed -i 's/;Product=/;ScrapProduct=/g' Annie.Gag.genome.edited.gff
+$ sed -i 's/;product=/;ScrapProduct=/g' Annie.Gag.genome.edited.gff
+$ sed -i 's/;Ontology_term=/;Scrap_Ontology=/g' Annie.Gag.genome.edited.gff
+$ sed -i 's/;Name=;/;/g' Annie.Gag.genome.edited.gff
+
+
+I then used gag to add my annotations and create the genbank table needed for tbl2asn, using -anno and -ses to ignore empty scaffolds.
+
+After running gag, I must edit the genome.tbl produced:  
+- replace all %2C with commas
+- fix partial tRNA locations
+
+```{r}
+pathProtFasOrtho <- "/isilon/cfia-ottawa-fallowfield/users/girouxeml/PIRL_working_directory/Lachnellula_species_GenomeAn_IonTorrent_2017/orthofinderAnalysis/proteinFasta"
+
+
+# qsub -pe smp 20 -S /bin/bash orthoFinderTest1.sub
+```
+

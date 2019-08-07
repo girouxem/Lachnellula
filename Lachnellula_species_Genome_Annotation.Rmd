@@ -1,0 +1,194 @@
+---
+title: "Lachnellula_suecica_Genome_Annotation"
+author: "Emily Giroux"
+date: "11/7/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Getting started in R: Set the working directory > setwd("~/") Check version installed
+```{r global_options, include=FALSE}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60), tidy = TRUE, fig.align='center')
+```
+
+
+This will help us when finding our files to source functions:
+```{r sourcing_my_functions}
+install.packages("rprojroot")
+library(rprojroot)
+# We specify ours is an RStudio project
+# The root object contains a function that will help us locate our package r files
+# regarless of our current working directory
+root <- rprojroot::is_rstudio_project
+scriptsPath <- root$make_fix_file(".")("R")
+scripts  <- dir(root$find_file("R", path = root$find_file()))
+scriptsl <- paste(scriptsPath, scripts, sep = "//")
+lapply(scriptsl, source)
+```
+
+User: 
+Define the path to the shared folder where the main working directory will be.
+```{r setting_the_main_directory, cache=TRUE}
+sharedPath <- "/home/CFIA-ACIA/girouxeml/PIRL_working_directory/"
+```
+
+```{r analysis_and_sequence_directory, cache=TRUE}
+analysis   <- "Lachnellula_species_GenomeAn_IonTorrent_2017/"
+seqDataDir <- "IonTorrent_data_2017"
+# Set the path to the analysis directory:
+sharedPathAn <- paste(sharedPath, analysis, sep="")
+
+# Set the path for where I've been putting the NCBI sumission files:
+lsueNCBIfilesPath <- paste(sharedPathAn, "Lachnellula_suecica/Lsue_NCBI_files/Lsue_NCBI/", sep = "")
+```
+
+Set paths to Maker and GAG scripts:
+```{r}
+# Path of where I'm saving scripts:
+scriptsPath <- "/home/CFIA-ACIA/girouxeml/prog/scripts_pl/"
+
+# Maker Scripts:
+makerMapPath <- paste(scriptsPath, "maker_map_ids.pl", sep = "")
+makerMapGffPath <- paste(scriptsPath, "map_gff_ids.pl", sep = "")
+makerFuncGffPath <- paste(scriptsPath, "maker_functional_gff.pl", sep = "")
+makerIPRupdatePath <- paste(scriptsPath, "ipr_update_gff.pl", sep = "")
+makerDatMapPath <- paste(scriptsPath, "map_data_ids.pl", sep = "")
+makerMapFastaPath <- paste(scriptsPath, "map_fasta_ids.pl", sep = "")
+
+# GAG scripts: 
+gagPath <- "/home/CFIA-ACIA/girouxeml/prog/gag/genomeannotation-GAG-40ea515/gag.py"
+
+# Annie Scripts:
+anniePath <- paste("/home/CFIA-ACIA/girouxeml/prog/annie/genomeannotation-annie/annie.py")
+```
+
+Create output directories for Maker and record the path:
+```{r}
+dir.create(paste(lsueNCBIfilesPath, "Maker_Output", sep = ""), showWarnings = TRUE, recursive = FALSE)
+makerOutput <- paste(lsueNCBIfilesPath, "Maker_Output/", sep = "")
+```
+
+
+Record the path of relevant files such as assembly, gff, and annotation files:
+```{r}
+# GFF exported from Blast2GO, following Blast2GO geneFind for eukaryotes:
+gffPath <- paste(lsueNCBIfilesPath, "B2G_project_files/Blast2GO_gff_without_contig.gff", sep = "")
+
+# Assembly fasta file from Newbler:
+fnaAssPath <- paste(lsueNCBIfilesPath, 
+                    "Assembly_Files/FromB2GSupport_Lsue_assembly_EG_2017_mod_removedlLessThan200_contig00022trim.fna", sep = "")
+```
+
+
+Copy the gff file to the new Maker_Output directory and record path to the copied gff:
+```{r}
+file.copy(gffPath, makerOutput)
+gffPathPr <- paste(makerOutput, "Blast2GO_gff_without_contig.gff", sep = "")
+```
+** Over here:
+Testing: I opened the blast gff in gedit, and changed all instances of seqName to Name.
+
+Seems like there are issues with the format og the Blast2GO gff, namely,
+the attributes use "seqName" and then re-order the other ones. I am using Maker
+to add annotations, so reformat to look like Maker GFF before using Maker scripts
+```{r}
+gff <- read.table(file = gffPathPr, 
+                  sep = "\t", header = F, quote = "", comment.char="#", fill = T)
+
+gff_c9 <- subset(gff, select = c(V1,V2,V3,V9))
+gff_c9$v1 <- as.character(lapply(strsplit(as.character(gff_c9$V9), split = ";"), "[",1))
+gff_c9$v2 <- as.character(lapply(strsplit(as.character(gff_c9$V9), split = "="), "[",2))
+gff_c9$v2 <- gsub(";.*", "", gff_c9$v2)
+gff_c9$v3 <- as.character(lapply(strsplit(as.character(gff_c9$V9), split = ";"), "[",2))
+gff_c9$v4 <- as.character(lapply(strsplit(as.character(gff_c9$V9), split = ";"), "[",3))
+
+setDT(gff_c9)
+gff_c9[ V3 == "gene", v1 := paste("ID=",v2, sep = "")]
+gff_c9[ V3 == "gene", v3 := paste("Name=",v2, sep = "")]
+gff_c9[ V3 == "gene", v5 := paste(v1, v3, sep = ";")]
+
+gff_c9[ V3 == "mRNA", v3 := paste("Name=",v2, sep = "")]
+gff_c9[ V3 == "mRNA", v5 := paste(v4, v1, v3, sep = ";")]
+
+gff_c9[ V3 == "intron", v3 := gsub("seqName", "Name", gff_c9$v3)]
+gff_c9[ V3 == "intron", v5 := paste(v1, v3, sep = ";")]
+
+gff_c9[ V3 == "stop_codon", v3 := gsub("seqName", "Name", gff_c9$v3)]
+gff_c9[ V3 == "stop_codon", v5 := paste(v1, v3, sep = ";")]
+
+gff_c9[ V3 == "start_codon", v3 := gsub("seqName", "Name", gff_c9$v3)]
+gff_c9[ V3 == "start_codon", v5 := paste(v1, v3, sep = ";")]
+
+gff_c9[ V3 == "CDS", v3 := gsub("seqName", "Name", gff_c9$v3)]
+gff_c9[ V3 == "CDS", v5 := paste(v1, v3, v4, sep = ";")]
+
+gff$V9 <- gff_c9$v5
+
+write.table(gff, file = paste(makerOutput, "mod_gff.gff", sep = ""), 
+      append = FALSE,
+      sep = "\t",
+      col.names=FALSE, row.names = FALSE, quote = FALSE)
+```
+
+Stack overflow - add the contig lines to the mod2_gff.gff file, using the terminal:
+$ awk 'p!=$1 {print "# Fasta definition line: >" $1;
+print "##sequence-region";
+p=$1}1' mod_gff.gff > mod2_gff.gff
+
+After this is done, open the gff in gedit, and add the fasta definition lines 1-7 that are in 
+the original blast2go gff.
+```{r}
+# record the path tot he modified GFF
+modGFF <- paste(makerOutput, "mod2_gff.gff", sep = "")
+```
+
+Rename gene names from gff and other output files for annotations:
+Map ID file:
+```{r}
+prefix = "LSUE_"
+justify = 6
+abrvGene = "G"
+abrvTrans = "T"
+
+mapFilePath <- paste(makerOutput, "id_Lsue2.map", sep = "")
+
+cmd <- paste("perl ", makerMapPath,
+             " --prefix ", prefix,
+             " --justify ", justify,
+             " --abrv_gene ", abrvGene,
+             " --abrv_tran ", abrvTrans,
+             " ", modGFF, # or try gffPathPr
+             " > ", mapFilePath, sep = "")
+
+system(cmd)
+```
+
+In-place replacement of names in GFF file with Maker scripts using the mapping file created
+in previous chunk:
+```{r}
+cmd <- paste("perl ", makerMapGffPath, 
+            " ", mapFilePath, 
+            " ", modGFF, # or try gffPathPr
+            sep = "")
+
+system(cmd)
+```
+
+```{r}
+uniprot_uniparc_union <- paste(makerOutput, "sp_Union_complete_db.fa", sep = "")
+blast_union_uniprot_uniparc <- paste(makerOutput, "sp_Union_completeBlast_db.txt", sep = "")
+
+gffRenamedFuncPath_union <- paste(makerOutput, "func_Union_Renamed_Blast2GO_gff_without_contig.gff", sep = "")
+
+cmd <- paste("perl ", makerFuncGffPath,
+             " ", uniprot_uniparc_union,
+             " ", blast_union_uniprot_uniparc, 
+             " ", modGFF, # or try gffPathPr
+             " > ", gffRenamedFuncPath_union, sep = "")
+
+system(cmd)
+```
