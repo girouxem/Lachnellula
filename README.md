@@ -1,0 +1,1 @@
+# Lachnellula_willkommii_Genome_SeqAssemblyAnnotation
