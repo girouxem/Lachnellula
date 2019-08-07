@@ -56,42 +56,72 @@ Literature Cited
 	Altschul, S. F., Gish, W., Miller, W., Myers, E. W. and Lipman, D. J. (1990). Basic local alignment search tool. Journal of molecular biology 215, 403-410.    
 	     
 	Bao, W., Kojima, K. K. and Kohany, O. (2015). Repbase Update, a database of repetitive elements in eukaryotic genomes. Mobile DNA 6, 11.          
-	Baral, H. (1984). Taxonomische und ökologische Studien über die Koniferen bewohnenden europäischen Arten der Gattung Lachnellula Karsten. Beiträge zur Kenntnis der Pilze Mitteleuropas 1, 143-156.     
+	Baral, H. (1984). Taxonomische und ökologische Studien über die Koniferen bewohnenden europäischen Arten der Gattung *Lachnellula* Karsten. Beiträge zur Kenntnis der Pilze Mitteleuropas 1, 143-156.     
 	     
 	Brandt, J. P. (1997). Forest health monitoring in west-central Canada in 1996.     
 	     
 	Campbell, M. S., Holt, C., Moore, B. and Yandell, M. (2014a). Genome annotation and curation using MAKER and MAKER‐P. Current Protocols in Bioinformatics 48, 4.11. 1-4.11. 39.     
 	     
-	Campbell, M. S., Law, M., Holt, C., Stein, J. C., Moghe, G. D., Hufnagel, D. E., Lei, J., Achawanantakun, R., Jiao, D. and Lawrence, C. J. (2014b). MAKER-P: a tool kit for the rapid creation, management, and quality control of plant genome annotations. Plant physiology 164, 513-524.
-	Cantarel, B. L., Korf, I., Robb, S. M., Parra, G., Ross, E., Moore, B., Holt, C., Alvarado, A. S. and Yandell, M. (2008). MAKER: an easy-to-use annotation pipeline designed for emerging model organism genomes. Genome research 18, 188-196.
-	Consortium, U. (2018). UniProt: the universal protein knowledgebase. Nucleic acids research 46, 2699.
-	Dharne, C. G. (1965). Taxonomic Investigations on the Discomycetous Genus Lachnellula Karst. Journal of Phytopathology 53, 101-144.
-	Geib, S. M., Hall, B., Derego, T., Bremer, F. T., Cannoles, K. and Sim, S. B. (2018). Genome Annotation Generator: a simple tool for generating and correcting WGS annotation tables for NCBI submission. GigaScience 7, giy018.
-	Hahn, G. G. and Ayers, T. T. (1934). Dasyscyphae on conifers in North America. I. The large-spored, white-excipled species. Mycologia 26, 73-101.
-	Hahn, G. G. and Ayers, T. T. (1943). Role of Dasyscypha willkommii and related fungi in the production of canker and die-back of larches. Journal of Forestry 41, 483-495.
-	Horst, R. K. (2013). Cankers and Diebacks. In Westcott's Plant Disease Handbook, pp. 149-173: Springer.
-	Hubley, R., Finn, R. D., Clements, J., Eddy, S. R., Jones, T. A., Bao, W., Smit, A. F. and Wheeler, T. J. (2015). The Dfam database of repetitive DNA families. Nucleic acids research 44, D81-D89.
-	Jones, P., Binns, D., Chang, H.-Y., Fraser, M., Li, W., McAnulla, C., McWilliam, H., Maslen, J., Mitchell, A. and Nuka, G. (2014). InterProScan 5: genome-scale protein function classification. Bioinformatics 30, 1236-1240.
-	Korf, I. (2004). Gene finding in novel genomes. BMC bioinformatics 5, 59.
-	Lohwag, K. (1963). Dangerous forest diseases in Austria. Miscellaneous Publication, 66.
-	Lowe, T. M. and Eddy, S. R. (1997). tRNAscan-SE: a program for improved detection of transfer RNA genes in genomic sequence. Nucleic acids research 25, 955.
-	Magasi, L. and Pond, S. (1982). European larch canker: a new disease in Canada and a new North American host record. Plant Disease 66.
-	Margulies, M., Egholm, M., Altman, W. E., Attiya, S., Bader, J. S., Bemben, L. A., Berka, J., Braverman, M. S., Chen, Y.-J. and Chen, Z. (2005). Genome sequencing in microfabricated high-density picolitre reactors. Nature 437, 376.
-	Miller-Weeks, M. and Stark, D. (1983). European larch canker in Maine. Plant Disease 67.
-	Möller, E., Bahnweg, G., Sandermann, H. and Geiger, H. (1992). A simple and efficient protocol for isolation of high molecular weight DNA from filamentous fungi, fruit bodies, and infected plant tissues. Nucleic acids research 20, 6115.
-	NCBI. (2011). The GenBank Submissions Handbook [Internet]. In Submitting Sequences using Specific NCBI Submission Tools. Bethesda (MD): National Center for Biotechnology Information (US).
-	Ostaff, D. (1985). Age distribution of European larch canker in New Brunswick. Plant Disease 69, 796-798.
-	Quinlan, A. R. and Hall, I. M. (2010). BEDTools: a flexible suite of utilities for comparing genomic features. Bioinformatics 26, 841-842.
-	Schmieder, R. and Edwards, R. (2011). Quality control and preprocessing of metagenomic datasets. Bioinformatics 27, 863-864.
-	Simão, F. A., Waterhouse, R. M., Ioannidis, P., Kriventseva, E. V. and Zdobnov, E. M. (2015). BUSCO: assessing genome assembly and annotation completeness with single-copy orthologs. Bioinformatics 31, 3210-3212.
-	Simpson, R. A. and Harrison, K. J. (1993). First report of European larch canker on Prince Edward Island, Canada. Plant Disease 77, 1264.
-	Smit, A. and Hubley, R. (2017). RepeatModeler Open-1.0.11. Available fom http://www.repeatmasker.org.
-	Smit, A., Hubley, R. and Green, P. (2016). RepeatMasker Open-4.0. 2015. Google Scholar.
-	Stanke, M., Diekhans, M., Baertsch, R. and Haussler, D. (2008). Using native and syntenically mapped cDNA alignments to improve de novo gene finding. Bioinformatics 24, 637-644.
-	Stanke, M. and Waack, S. (2003). Gene prediction with a hidden Markov model and a new intron submodel. Bioinformatics 19, ii215-ii225.
-	Tate, R., Hall, B. and DeRego, T. (2014). Annie: The ANNotation Information Extractor (Version 1.0).
-	Ter-Hovhannisyan, V., Lomsadze, A., Chernoff, Y. O. and Borodovsky, M. (2008). Gene prediction in novel fungal genomes using an ab initio algorithm with unsupervised training. Genome research, gr. 081612.108.
-	USDA/APHIS. (2012). Supporting Document: Plants for Planting Quarantine Pest Evaluation Data Sheet. Washington, DC.
-	Waterhouse, R. M., Seppey, M., Simão, F. A., Manni, M., Ioannidis, P., Klioutchnikov, G., Kriventseva, E. V. and Zdobnov, E. M. (2017). BUSCO applications from quality assessments to gene prediction and phylogenomics. Molecular biology and evolution 35, 543-548.
-	Yde‐Andersen, A. (1979). Host spectrum, host morphology and geographic distribution of larch canker, Lachnellula willkommii. Forest Pathology 9, 211-219.
-
+	Campbell, M. S., Law, M., Holt, C., Stein, J. C., Moghe, G. D., Hufnagel, D. E., Lei, J., Achawanantakun, R., Jiao, D. and Lawrence, C. J. (2014b). MAKER-P: a tool kit for the rapid creation, management, and quality control of plant genome annotations. Plant physiology 164, 513-524.     
+	     
+	Cantarel, B. L., Korf, I., Robb, S. M., Parra, G., Ross, E., Moore, B., Holt, C., Alvarado, A. S. and Yandell, M. (2008). MAKER: an easy-to-use annotation pipeline designed for emerging model organism genomes. Genome research 18, 188-196.     
+	     
+	Consortium, U. (2018). UniProt: the universal protein knowledgebase. Nucleic acids research 46, 2699.     
+	     
+	Dharne, C. G. (1965). Taxonomic Investigations on the *Discomycetous* Genus *Lachnellula* Karst. Journal of Phytopathology 53, 101-144.     
+	     
+	Geib, S. M., Hall, B., Derego, T., Bremer, F. T., Cannoles, K. and Sim, S. B. (2018). Genome Annotation Generator: a simple tool for generating and correcting WGS annotation tables for NCBI submission. GigaScience 7, giy018.     
+	     
+	Hahn, G. G. and Ayers, T. T. (1934). *Dasyscyphae* on conifers in North America. I. The large-spored, white-excipled species. Mycologia 26, 73-101.     
+	     
+	Hahn, G. G. and Ayers, T. T. (1943). Role of *Dasyscypha willkommii* and related fungi in the production of canker and die-back of larches. Journal of Forestry 41, 483-495.     
+	     
+	Horst, R. K. (2013). Cankers and Diebacks. In Westcott's Plant Disease Handbook, pp. 149-173: Springer.     
+	     
+	Hubley, R., Finn, R. D., Clements, J., Eddy, S. R., Jones, T. A., Bao, W., Smit, A. F. and Wheeler, T. J. (2015). The Dfam database of repetitive DNA families. Nucleic acids research 44, D81-D89.     
+	     
+	Jones, P., Binns, D., Chang, H.-Y., Fraser, M., Li, W., McAnulla, C., McWilliam, H., Maslen, J., Mitchell, A. and Nuka, G. (2014). InterProScan 5: genome-scale protein function classification. Bioinformatics 30, 1236-1240.     
+	     
+	Korf, I. (2004). Gene finding in novel genomes. BMC bioinformatics 5, 59.     
+	     
+	Lohwag, K. (1963). Dangerous forest diseases in Austria. Miscellaneous Publication, 66.     
+	     
+	Lowe, T. M. and Eddy, S. R. (1997). tRNAscan-SE: a program for improved detection of transfer RNA genes in genomic sequence. Nucleic acids research 25, 955.     
+	     
+	Magasi, L. and Pond, S. (1982). European larch canker: a new disease in Canada and a new North American host record. Plant Disease 66.     
+	     
+	Margulies, M., Egholm, M., Altman, W. E., Attiya, S., Bader, J. S., Bemben, L. A., Berka, J., Braverman, M. S., Chen, Y.-J. and Chen, Z. (2005). Genome sequencing in microfabricated high-density picolitre reactors. Nature 437, 376.     
+	     
+	Miller-Weeks, M. and Stark, D. (1983). European larch canker in Maine. Plant Disease 67.     
+	     
+	Möller, E., Bahnweg, G., Sandermann, H. and Geiger, H. (1992). A simple and efficient protocol for isolation of high molecular weight DNA from filamentous fungi, fruit bodies, and infected plant tissues. Nucleic acids research 20, 6115.     
+	     
+	NCBI. (2011). The GenBank Submissions Handbook [Internet]. In Submitting Sequences using Specific NCBI Submission Tools. Bethesda (MD): National Center for Biotechnology Information (US).     
+	     
+	Ostaff, D. (1985). Age distribution of European larch canker in New Brunswick. Plant Disease 69, 796-798.     
+	     
+	Quinlan, A. R. and Hall, I. M. (2010). BEDTools: a flexible suite of utilities for comparing genomic features. Bioinformatics 26, 841-842.     
+	     
+	Schmieder, R. and Edwards, R. (2011). Quality control and preprocessing of metagenomic datasets. Bioinformatics 27, 863-864.     
+	     
+	Simão, F. A., Waterhouse, R. M., Ioannidis, P., Kriventseva, E. V. and Zdobnov, E. M. (2015). BUSCO: assessing genome assembly and annotation completeness with single-copy orthologs. Bioinformatics 31, 3210-3212.     
+	     
+	Simpson, R. A. and Harrison, K. J. (1993). First report of European larch canker on Prince Edward Island, Canada. Plant Disease 77, 1264.     
+	     
+	Smit, A. and Hubley, R. (2017). RepeatModeler Open-1.0.11. Available fom http://www.repeatmasker.org.     
+	     
+	Smit, A., Hubley, R. and Green, P. (2016). RepeatMasker Open-4.0. 2015. Google Scholar.     
+	     
+	Stanke, M., Diekhans, M., Baertsch, R. and Haussler, D. (2008). Using native and syntenically mapped cDNA alignments to improve *de novo* gene finding. Bioinformatics 24, 637-644.     
+	     
+	Stanke, M. and Waack, S. (2003). Gene prediction with a hidden Markov model and a new intron submodel. Bioinformatics 19, ii215-ii225.     
+	     
+	Tate, R., Hall, B. and DeRego, T. (2014). Annie: The ANNotation Information Extractor (Version 1.0).     
+	     
+	Ter-Hovhannisyan, V., Lomsadze, A., Chernoff, Y. O. and Borodovsky, M. (2008). Gene prediction in novel fungal genomes using an *ab initio* algorithm with unsupervised training. Genome research, gr. 081612.108.     
+	     
+	USDA/APHIS. (2012). Supporting Document: Plants for Planting Quarantine Pest Evaluation Data Sheet. Washington, DC.    
+	     
+	Waterhouse, R. M., Seppey, M., Simão, F. A., Manni, M., Ioannidis, P., Klioutchnikov, G., Kriventseva, E. V. and Zdobnov, E. M. (2017). BUSCO applications from quality assessments to gene prediction and phylogenomics. Molecular biology and evolution 35, 543-548.     
+	     
+	Yde‐Andersen, A. (1979). Host spectrum, host morphology and geographic distribution of larch canker, *Lachnellula willkommii*. Forest Pathology 9, 211-219.     
